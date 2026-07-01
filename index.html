@@ -107,10 +107,11 @@
 <!-- SUBIR -->
 <div class="view active" id="view-subir">
   <div class="upload-zone" id="uploadZone">
-    <input type="file" accept="image/*" multiple id="fileInput" onchange="handleFiles(this.files)"/>
+    <input type="file" accept="image/*" multiple id="fileInput" onchange="handleFiles(this.files)" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;z-index:10;"/>
     <div class="upload-icon">📸</div>
     <h3>Sube tus fotos de joyas</h3>
     <p>Arrastra o toca para seleccionar · JPG, PNG · Varias a la vez</p>
+    <button onclick="document.getElementById('fileInput').click()" style="margin-top:16px;background:var(--gold-dark);color:white;border:none;border-radius:8px;padding:10px 24px;font-size:14px;font-weight:600;cursor:pointer;position:relative;z-index:20;">📂 Seleccionar fotos</button>
   </div>
   <div class="preview-section" id="previewSection"></div>
 </div>
@@ -439,9 +440,6 @@ zone.addEventListener('drop',e=>{e.preventDefault();zone.style.background='';han
 
 renderCatalog();
 
-// Load API key from meta tag
-const _km = document.querySelector('meta[name=akey]');
-window._AKEY = _km ? _km.content : '';
 </script>
 </body>
 </html>
