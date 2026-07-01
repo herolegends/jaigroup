@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Jaigroup — Catálogo de Joyas</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    :root{
+      --gold:#C9A84C;--gold-dark:#8B6914;--ink:#1A1612;
+      --parch:#FAF7F2;--parch-dark:#F0EAE0;--muted:#7A6E62;
+      --white:#FFFFFF;--danger:#C0392B;--success:#27AE60;
+      --shadow:0 2px 16px rgba(0,0,0,0.08);
+    }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Inter',sans-serif;background:var(--parch);color:var(--ink);min-height:100vh;}
+    header{background:var(--ink);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:64px;position:sticky;top:0;z-index:100;}
+    .logo{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:700;color:var(--gold);letter-spacing:2px;}
+    .logo span{color:var(--white);font-weight:400;}
+    .tabs{display:flex;gap:4px;background:var(--parch-dark);padding:6px;border-radius:12px;margin:24px 24px 0;}
+    .tab{flex:1;padding:10px 8px;border:none;background:transparent;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;transition:all .2s;text-align:center;}
+    .tab.active{background:var(--white);color:var(--ink);box-shadow:var(--shadow);}
+    .view{display:none;padding:24px;}
+    .view.active{display:block;}
+    .upload-zone{border:2px dashed var(--gold);border-radius:16px;padding:48px 24px;text-align:center;cursor:pointer;background:var(--white);position:relative;}
+    .upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+    .upload-icon{font-size:48px;margin-bottom:12px;}
+    .upload-zone h3{font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--gold-dark);margin-bottom:6px;}
+    .upload-zone p{color:var(--muted);font-size:14px;}
+    .preview-section{margin-top:24px;}
+    .preview-section>h4{font-family:'Cormorant Garamond',serif;font-size:18px;margin-bottom:14px;color:var(--ink);}
+    /* CARD — foto izquierda fija, campos derecha */
+    .preview-card{background:var(--white);border-radius:12px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:20px;display:flex;flex-direction:row;}
+    .preview-card .card-photo{width:180px;min-width:180px;object-fit:cover;object-position:center;display:block;align-self:stretch;}
+    .preview-fields{padding:12px;flex:1;display:grid;grid-template-columns:1fr 1fr;gap:7px;align-content:start;}
+    .preview-fields .full{grid-column:1/-1;}
+    .field-group label{display:block;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:3px;}
+    .field-group input,.field-group select{width:100%;border:1.5px solid var(--parch-dark);border-radius:6px;padding:7px 10px;font-size:13px;font-family:'Inter',sans-serif;background:var(--parch);color:var(--ink);outline:none;transition:border-color .2s;}
+    .field-group input:focus,.field-group select:focus{border-color:var(--gold);}
+    .btn-save{grid-column:1/-1;background:var(--gold-dark);color:var(--white);border:none;border-radius:8px;padding:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:background .2s;margin-top:2px;}
+    .btn-save:hover{background:var(--gold);color:var(--ink);}
+    .btn-save:disabled{background:#ccc;cursor:not-allowed;}
+    .ocr-badge{font-size:11px;padding:4px 10px;border-radius:20px;display:inline-block;margin-bottom:6px;}
+    .ocr-badge.reading{background:#FFF3CD;color:#856404;}
+    .ocr-badge.done{background:#D1E7DD;color:#0A3622;}
+    .ocr-badge.manual{background:#E2E8F0;color:#475569;}
+    /* CATALOG */
+    .catalog-controls{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
+    .search-box{flex:1;min-width:180px;display:flex;align-items:center;background:var(--white);border:1.5px solid var(--parch-dark);border-radius:8px;padding:0 12px;gap:8px;}
+    .search-box input{border:none;background:transparent;padding:10px 0;font-size:14px;outline:none;width:100%;font-family:'Inter',sans-serif;}
+    .filter-select{border:1.5px solid var(--parch-dark);border-radius:8px;padding:10px 14px;font-size:14px;background:var(--white);font-family:'Inter',sans-serif;outline:none;cursor:pointer;}
+    .btn-pdf{background:var(--ink);color:var(--gold);border:none;border-radius:8px;padding:10px 18px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;}
+    .btn-pdf:hover{background:var(--gold-dark);color:var(--white);}
+    .stats-bar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+    .stat-pill{background:var(--white);border-radius:30px;padding:5px 14px;font-size:13px;box-shadow:var(--shadow);color:var(--muted);}
+    .stat-pill strong{color:var(--ink);}
+    .jewelry-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:16px;}
+    .jewelry-card{background:var(--white);border-radius:12px;box-shadow:var(--shadow);overflow:hidden;cursor:pointer;transition:transform .2s,box-shadow .2s;position:relative;}
+    .jewelry-card:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,0.12);}
+    .jewelry-card img{width:100%;aspect-ratio:1;object-fit:cover;}
+    .card-info{padding:10px;border-top:1px solid var(--parch-dark);}
+    .card-ref{font-weight:700;font-size:13px;color:var(--gold-dark);}
+    .card-cat{display:inline-block;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;background:var(--parch-dark);color:var(--muted);padding:2px 7px;border-radius:20px;margin:3px 0;}
+    .card-details{font-size:12px;color:var(--muted);line-height:1.6;}
+    .card-delete{position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.55);color:white;border:none;border-radius:50%;width:28px;height:28px;font-size:14px;cursor:pointer;display:none;align-items:center;justify-content:center;}
+    .jewelry-card:hover .card-delete{display:flex;}
+    .empty-state{text-align:center;padding:60px 24px;color:var(--muted);grid-column:1/-1;}
+    .empty-state .icon{font-size:56px;margin-bottom:16px;}
+    .empty-state h3{font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--ink);margin-bottom:8px;}
+    .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;align-items:center;justify-content:center;padding:20px;}
+    .modal-overlay.open{display:flex;}
+    .modal{background:var(--white);border-radius:16px;max-width:480px;width:100%;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.3);}
+    .modal img{width:100%;max-height:320px;object-fit:cover;}
+    .modal-body{padding:20px;}
+    .modal-ref{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:700;color:var(--gold-dark);}
+    .modal-cat{display:inline-block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;background:var(--parch-dark);color:var(--muted);padding:3px 10px;border-radius:20px;margin:8px 0 16px;}
+    .modal-specs{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+    .spec-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:2px;}
+    .spec-value{font-size:15px;font-weight:600;color:var(--ink);}
+    .modal-close{display:block;margin-top:20px;width:100%;padding:12px;background:var(--ink);color:var(--white);border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;}
+    .search-result-card{background:var(--white);border-radius:12px;box-shadow:var(--shadow);overflow:hidden;display:flex;margin-bottom:12px;cursor:pointer;}
+    .search-result-card img{width:130px;height:130px;object-fit:cover;flex-shrink:0;}
+    .search-result-info{padding:14px;flex:1;}
+    .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink);color:var(--white);padding:12px 24px;border-radius:30px;font-size:14px;font-weight:500;z-index:999;transition:transform .3s;white-space:nowrap;}
+    .toast.show{transform:translateX(-50%) translateY(0);}
+    .toast.success{background:var(--success);}
+    .toast.error{background:var(--danger);}
+    @media(max-width:560px){
+      .preview-card{flex-direction:column;}
+      .preview-card .card-photo{width:100%;height:220px;min-width:unset;}
+      .preview-fields{grid-template-columns:1fr;}
+      .modal-specs{grid-template-columns:1fr;}
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div class="logo">JAI<span>group</span></div>
+  <div style="color:var(--gold);font-size:12px;letter-spacing:1px;">CATÁLOGO DE JOYAS</div>
+</header>
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('subir')">📤 Subir</button>
+  <button class="tab" onclick="switchTab('catalogo')">💍 Catálogo</button>
+  <button class="tab" onclick="switchTab('buscar')">🔍 Buscar</button>
+</div>
+<!-- SUBIR -->
+<div class="view active" id="view-subir">
+  <div class="upload-zone" id="uploadZone">
+    <input type="file" accept="image/*" multiple id="fileInput" onchange="handleFiles(this.files)"/>
+    <div class="upload-icon">📸</div>
+    <h3>Sube tus fotos de joyas</h3>
+    <p>Arrastra o toca para seleccionar · JPG, PNG · Varias a la vez</p>
+  </div>
+  <div class="preview-section" id="previewSection"></div>
+</div>
+<!-- CATÁLOGO -->
+<div class="view" id="view-catalogo">
+  <div class="stats-bar" id="statsBar"></div>
+  <div class="catalog-controls">
+    <div class="search-box">
+      <span>🔍</span>
+      <input type="text" placeholder="Buscar referencia..." id="catalogSearch" oninput="renderCatalog()"/>
+    </div>
+    <select class="filter-select" id="categoryFilter" onchange="renderCatalog()">
+      <option value="">Todas las categorías</option>
+      <option value="Argolla">Argollas</option>
+      <option value="Pulsera">Pulseras</option>
+      <option value="Cadena">Cadenas</option>
+      <option value="Arete">Aretes</option>
+      <option value="Anillo">Anillos</option>
+      <option value="Otro">Otros</option>
+    </select>
+    <button class="btn-pdf" onclick="generatePDF()">📄 PDF WhatsApp</button>
+  </div>
+  <div class="jewelry-grid" id="jewelryGrid"></div>
+</div>
+<!-- BUSCAR -->
+<div class="view" id="view-buscar">
+  <div style="background:var(--white);border-radius:12px;padding:20px;box-shadow:var(--shadow);margin-bottom:20px;">
+    <label style="display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:8px;">Referencia / Código</label>
+    <input type="text" id="searchInput" placeholder="Ej: Z-287, Pulsera 711..."
+      style="width:100%;border:2px solid var(--gold);border-radius:8px;padding:12px 16px;font-size:16px;font-family:Inter,sans-serif;outline:none;background:var(--parch);"
+      oninput="searchByRef(this.value)"/>
+  </div>
+  <div id="searchResults"></div>
+</div>
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal">
+    <img id="modalImg" src="" alt=""/>
+    <div class="modal-body">
+      <div class="modal-ref" id="modalRef"></div>
+      <div class="modal-cat" id="modalCat"></div>
+      <div class="modal-specs">
+        <div><div class="spec-label">Peso</div><div class="spec-value" id="modalPeso"></div></div>
+        <div><div class="spec-label">Medida</div><div class="spec-value" id="modalMedida"></div></div>
+        <div><div class="spec-label">Grosor/Ancho</div><div class="spec-value" id="modalGrosor"></div></div>
+        <div><div class="spec-label">Recargo</div><div class="spec-value" id="modalRecargo"></div></div>
+        <div style="grid-column:1/-1"><div class="spec-label">Código adicional</div><div class="spec-value" id="modalCodigo"></div></div>
+      </div>
+      <button class="modal-close" onclick="document.getElementById('modalOverlay').classList.remove('open')">Cerrar</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ── STORAGE ──
+const SK = 'jaigroup_v3';
+const loadJewels = () => { try{ return JSON.parse(localStorage.getItem(SK))||[]; }catch{ return []; } };
+const saveJewels = arr => localStorage.setItem(SK, JSON.stringify(arr));
+let jewels = loadJewels();
+
+// ── TABS ──
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['subir','catalogo','buscar'][i]===name));
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  if(name==='catalogo') renderCatalog();
+  if(name==='buscar'){ document.getElementById('searchInput').value=''; document.getElementById('searchResults').innerHTML=''; }
+}
+
+// ── FILE HANDLING — each file gets FRESH empty card ──
+async function handleFiles(files){
+  const section = document.getElementById('previewSection');
+  if(!section.querySelector('h4')){
+    const h=document.createElement('h4');
+    h.textContent='Revisa y confirma los datos extraídos';
+    section.prepend(h);
+  }
+  // Reset file input so same file can be re-uploaded
+  document.getElementById('fileInput').value='';
+  for(let i=0;i<files.length;i++) await processFile(files[i]);
+}
+
+function processFile(file){
+  return new Promise(res=>{
+    const reader=new FileReader();
+    reader.onload=async e=>{
+      const dataUrl=e.target.result;
+      const id='c_'+Date.now()+'_'+Math.random().toString(36).substr(2,4);
+      // Append card with ALL fields EMPTY (no placeholder data)
+      appendCard(id, dataUrl);
+      await runOCR(dataUrl, id);
+      res();
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function appendCard(id, dataUrl){
+  const div=document.createElement('div');
+  div.className='preview-card'; div.id=id;
+  div.innerHTML=`
+    <img class="card-photo" src="${dataUrl}" alt="joya"/>
+    <div class="preview-fields">
+      <div class="full"><span class="ocr-badge reading" id="badge_${id}">🔍 Leyendo leyenda de la foto...</span></div>
+      <div class="field-group full">
+        <label>Categoría</label>
+        <select id="cat_${id}">
+          <option value="">— seleccionar —</option>
+          <option value="Argolla">Argolla</option>
+          <option value="Pulsera">Pulsera</option>
+          <option value="Cadena">Cadena</option>
+          <option value="Arete">Arete</option>
+          <option value="Anillo">Anillo</option>
+          <option value="Otro">Otro</option>
+        </select>
+      </div>
+      <div class="field-group full">
+        <label>Referencia / Código</label>
+        <input type="text" id="ref_${id}" placeholder=""/>
+      </div>
+      <div class="field-group"><label>Peso (gr)</label><input type="text" id="peso_${id}" placeholder=""/></div>
+      <div class="field-group"><label>Medida</label><input type="text" id="medida_${id}" placeholder=""/></div>
+      <div class="field-group"><label>Grosor / Ancho</label><input type="text" id="grosor_${id}" placeholder=""/></div>
+      <div class="field-group"><label>Recargo</label><input type="text" id="recargo_${id}" placeholder=""/></div>
+      <div class="field-group full"><label>Código adicional</label><input type="text" id="codigo_${id}" placeholder=""/></div>
+      <button class="btn-save" id="savebtn_${id}" disabled onclick="saveJewel('${id}')">✅ Guardar en catálogo</button>
+    </div>`;
+  document.getElementById('previewSection').appendChild(div);
+}
+
+// ── CLAUDE VIA NETLIFY FUNCTION ──
+async function runOCR(dataUrl, id){
+  const badge  = document.getElementById('badge_'+id);
+  const savBtn = document.getElementById('savebtn_'+id);
+  try{
+    const m = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+    if(!m) throw new Error('Invalid image');
+
+    const resp = await fetch('/.netlify/functions/read-jewelry', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ imageBase64: m[2], mimeType: m[1] })
+    });
+
+    const data = await resp.json();
+    if(data.error) throw new Error(data.error);
+
+    if(data.categoria)  document.getElementById('cat_'+id).value     = data.categoria;
+    if(data.referencia) document.getElementById('ref_'+id).value     = data.referencia;
+    if(data.peso)       document.getElementById('peso_'+id).value    = data.peso;
+    if(data.medida)     document.getElementById('medida_'+id).value  = data.medida;
+    if(data.grosor)     document.getElementById('grosor_'+id).value  = data.grosor;
+    if(data.recargo)    document.getElementById('recargo_'+id).value = data.recargo;
+    if(data.codigo)     document.getElementById('codigo_'+id).value  = data.codigo;
+
+    badge.textContent = '✅ Datos leídos — revisa y da guardar';
+    badge.className   = 'ocr-badge done';
+  }catch(err){
+    console.error('OCR error:', err);
+    badge.textContent = '✏️ No se pudo leer — escribe manualmente';
+    badge.className   = 'ocr-badge manual';
+  }
+  savBtn.disabled = false;
+}}
+
+// ── SAVE ──
+function saveJewel(id){
+  const ref=document.getElementById('ref_'+id).value.trim();
+  if(!ref){ showToast('Agrega una referencia primero','error'); return; }
+  const img=document.querySelector('#'+id+' .card-photo').src;
+  const j={
+    id:Date.now(), ref,
+    categoria:document.getElementById('cat_'+id).value||'Otro',
+    peso:     document.getElementById('peso_'+id).value,
+    medida:   document.getElementById('medida_'+id).value,
+    grosor:   document.getElementById('grosor_'+id).value,
+    recargo:  document.getElementById('recargo_'+id).value,
+    codigo:   document.getElementById('codigo_'+id).value,
+    img, fecha:new Date().toLocaleDateString('es-PA')
+  };
+  jewels.push(j); saveJewels(jewels);
+  document.getElementById(id).remove();
+  showToast('✅ '+ref+' guardada','success');
+}
+
+// ── CATALOG ──
+function renderCatalog(){
+  const q=document.getElementById('catalogSearch').value.toLowerCase();
+  const cat=document.getElementById('categoryFilter').value;
+  const filtered=jewels.filter(j=>
+    (!q||j.ref.toLowerCase().includes(q)||j.categoria.toLowerCase().includes(q))&&
+    (!cat||j.categoria===cat)
+  );
+  const cats={};
+  jewels.forEach(j=>{cats[j.categoria]=(cats[j.categoria]||0)+1;});
+  document.getElementById('statsBar').innerHTML=
+    `<div class="stat-pill"><strong>${jewels.length}</strong> joyas</div>`+
+    Object.entries(cats).map(([k,v])=>`<div class="stat-pill"><strong>${v}</strong> ${k}s</div>`).join('');
+  const grid=document.getElementById('jewelryGrid');
+  if(!filtered.length){
+    grid.innerHTML=`<div class="empty-state"><div class="icon">💍</div>
+      <h3>${jewels.length?'Sin resultados':'Aún no hay joyas'}</h3>
+      <p>${jewels.length?'Prueba otro filtro':'Ve a Subir para agregar joyas'}</p></div>`;
+    return;
+  }
+  grid.innerHTML=filtered.map(j=>`
+    <div class="jewelry-card" onclick="openModal(${j.id})">
+      <img src="${j.img}" alt="${j.ref}"/>
+      <button class="card-delete" onclick="event.stopPropagation();deleteJewel(${j.id})">✕</button>
+      <div class="card-info">
+        <div class="card-ref">${j.ref}</div>
+        <div class="card-cat">${j.categoria}</div>
+        <div class="card-details">
+          ${j.peso?'⚖️ '+j.peso+'&nbsp;':''}${j.medida?'📏 '+j.medida:''}<br/>
+          ${j.grosor?'↔️ '+j.grosor+'&nbsp;':''}${j.recargo?'💰 '+j.recargo:''}
+        </div>
+      </div>
+    </div>`).join('');
+}
+function deleteJewel(id){
+  if(!confirm('¿Eliminar esta joya?')) return;
+  jewels=jewels.filter(j=>j.id!==id); saveJewels(jewels); renderCatalog();
+  showToast('Joya eliminada');
+}
+
+// ── SEARCH ──
+function searchByRef(q){
+  q=q.toLowerCase().trim();
+  const el=document.getElementById('searchResults');
+  if(!q){el.innerHTML='';return;}
+  const found=jewels.filter(j=>
+    j.ref.toLowerCase().includes(q)||j.categoria.toLowerCase().includes(q)||
+    (j.codigo&&j.codigo.toLowerCase().includes(q))
+  );
+  if(!found.length){
+    el.innerHTML=`<div class="empty-state"><div class="icon">🔎</div><h3>Sin resultados</h3></div>`;
+    return;
+  }
+  el.innerHTML=found.map(j=>`
+    <div class="search-result-card" onclick="openModal(${j.id})">
+      <img src="${j.img}" alt="${j.ref}"/>
+      <div class="search-result-info">
+        <div style="font-size:20px;font-family:'Cormorant Garamond',serif;font-weight:700;color:var(--gold-dark);">${j.ref}</div>
+        <div class="card-cat" style="margin:6px 0;">${j.categoria}</div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.9;">
+          ${j.peso?'<b>Peso:</b> '+j.peso+'<br/>':''}
+          ${j.medida?'<b>Medida:</b> '+j.medida+'<br/>':''}
+          ${j.grosor?'<b>Grosor:</b> '+j.grosor+'<br/>':''}
+          ${j.recargo?'<b>Recargo:</b> '+j.recargo:''}
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+// ── MODAL ──
+function openModal(id){
+  const j=jewels.find(x=>x.id===id); if(!j) return;
+  document.getElementById('modalImg').src=j.img;
+  document.getElementById('modalRef').textContent=j.ref;
+  document.getElementById('modalCat').textContent=j.categoria;
+  document.getElementById('modalPeso').textContent=j.peso||'—';
+  document.getElementById('modalMedida').textContent=j.medida||'—';
+  document.getElementById('modalGrosor').textContent=j.grosor||'—';
+  document.getElementById('modalRecargo').textContent=j.recargo||'—';
+  document.getElementById('modalCodigo').textContent=j.codigo||'—';
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function closeModal(e){
+  if(e.target===document.getElementById('modalOverlay'))
+    document.getElementById('modalOverlay').classList.remove('open');
+}
+
+// ── PDF ──
+async function generatePDF(){
+  const cat=document.getElementById('categoryFilter').value;
+  const q=document.getElementById('catalogSearch').value.toLowerCase();
+  const items=jewels.filter(j=>(!q||j.ref.toLowerCase().includes(q))&&(!cat||j.categoria===cat));
+  if(!items.length){showToast('No hay joyas para exportar','error');return;}
+  showToast('Generando PDF...');
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'p',unit:'mm',format:'a4'});
+  const pw=210,ph=297,mg=14; let y=mg;
+  doc.setFillColor(26,22,18); doc.rect(0,0,pw,22,'F');
+  doc.setFont('helvetica','bold'); doc.setFontSize(18); doc.setTextColor(201,168,76);
+  doc.text('JAIGROUP',mg,14);
+  doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(255,255,255);
+  doc.text('Catálogo'+(cat?' — '+cat+'s':''),mg+52,14);
+  doc.text(new Date().toLocaleDateString('es-PA'),pw-mg-24,14);
+  y=32;
+  const cols=3,cw=(pw-mg*2-(cols-1)*6)/cols,ih=44,ch=ih+30;
+  for(let i=0;i<items.length;i++){
+    const col=i%cols,x=mg+col*(cw+6);
+    if(col===0&&i!==0) y+=ch+6;
+    if(y+ch>ph-mg){doc.addPage();y=mg;}
+    doc.setFillColor(250,247,242); doc.roundedRect(x,y,cw,ch,3,3,'F');
+    try{doc.addImage(items[i].img,'JPEG',x+2,y+2,cw-4,ih-4,undefined,'FAST');}catch(e){}
+    const iy=y+ih+3;
+    doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(26,22,18);
+    doc.text(items[i].ref,x+4,iy+5);
+    doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(122,110,98);
+    doc.text([items[i].peso,items[i].medida,items[i].grosor,items[i].recargo].filter(Boolean).join(' · '),x+4,iy+11,{maxWidth:cw-8});
+    doc.setTextColor(139,105,20); doc.text(items[i].categoria,x+4,iy+17);
+  }
+  const tp=doc.getNumberOfPages();
+  for(let p=1;p<=tp;p++){
+    doc.setPage(p); doc.setFontSize(7); doc.setTextColor(150,150,150);
+    doc.text(`Jaigroup · ${new Date().toLocaleDateString('es-PA')} · Pág ${p}/${tp}`,mg,ph-6);
+  }
+  doc.save('Jaigroup-'+(cat||'todas')+'.pdf');
+  showToast('✅ PDF listo','success');
+}
+
+// ── TOAST ──
+function showToast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show '+type;
+  setTimeout(()=>{t.className='toast';},3000);
+}
+
+// ── DRAG & DROP ──
+const zone=document.getElementById('uploadZone');
+zone.addEventListener('dragover',e=>{e.preventDefault();zone.style.background='#FFFDF7';});
+zone.addEventListener('dragleave',()=>{zone.style.background='';});
+zone.addEventListener('drop',e=>{e.preventDefault();zone.style.background='';handleFiles(e.dataTransfer.files);});
+
+renderCatalog();
+
+// Load API key from meta tag
+const _km = document.querySelector('meta[name=akey]');
+window._AKEY = _km ? _km.content : '';
+</script>
+</body>
+</html>
